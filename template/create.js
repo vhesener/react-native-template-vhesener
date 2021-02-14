@@ -91,7 +91,7 @@ function copyCustomFiles() {
   copyFolderRecursiveSync(custom, currentDir, MERGE);
 }
 
-function modifyPackage() {
+function modifyPackageFile() {
   const proj = getPackage(PROJ);
   const projJSON = proj.json;
   const custom = getPackage(CUSTOM);
@@ -115,6 +115,14 @@ function modifyPackage() {
   fs.writeFileSync(newPath, JSON.stringify(newJSON, null, 2), 'utf8');
 }
 
+function removeFlipper() {
+  const diffPath = path.resolve(CUSTOM, 'removeFlipper.diff')
+  execSync(
+    `git apply ${diffPath}`, 
+    { stdio: 'inherit' }
+  ); 
+}
+
 const DEP_TYPE_DEV = 'devDependencies';
 const DEP_TYPE_MAIN = 'dependencies';
 
@@ -124,21 +132,14 @@ function installDependencies() {
 }
 
 function installDependencyType(depType) {
-  console.log(`Adding ${depType} dependencies for the project...`);
-
-  // const devDependenciesJsonPath = path.resolve('devDependencies.json');
-  // const devDependencies = JSON.parse(fs.readFileSync(devDependenciesJsonPath));
-
   const custom = getPackage(CUSTOM);
-
   const dependencies = custom.json[depType];
 
-  // const depList = devDependencies.join(' ');
   let depList = '';
   for (const depName in dependencies) {
     depList = `${depList} ${depName}`;
   }
-  console.log(`${depType} list: `, depList);
+
   if (depList) {
     execSync(
       `(cd ${MERGE}; yarn add ${depType === DEP_TYPE_DEV ? '-D' : ''} ${depList})`, 
@@ -155,6 +156,7 @@ function cleanup() {
 initialize();
 copyProjectFiles();
 copyCustomFiles();
-modifyPackage();
+modifyPackageFile();
+removeFlipper();
 installDependencies();
 cleanup();

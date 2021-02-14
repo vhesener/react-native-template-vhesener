@@ -1,0 +1,212 @@
+diff --git a/template/merged/android/app/build.gradle b/template/merged/android/app/build.gradle
+index e446929..c54463d 100644
+--- a/template/merged/android/app/build.gradle
++++ b/template/merged/android/app/build.gradle
+@@ -187,19 +187,6 @@ dependencies {
+ 
+     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
+ 
+-    debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}") {
+-      exclude group:'com.facebook.fbjni'
+-    }
+-
+-    debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
+-        exclude group:'com.facebook.flipper'
+-        exclude group:'com.squareup.okhttp3', module:'okhttp'
+-    }
+-
+-    debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}") {
+-        exclude group:'com.facebook.flipper'
+-    }
+-
+     if (enableHermes) {
+         def hermesPath = "../../node_modules/hermes-engine/android/";
+         debugImplementation files(hermesPath + "hermes-debug.aar")
+diff --git a/template/merged/android/app/src/debug/java/com/myprojectname/ReactNativeFlipper.java b/template/merged/android/app/src/debug/java/com/myprojectname/ReactNativeFlipper.java
+deleted file mode 100644
+index e5ede18..0000000
+--- a/template/merged/android/app/src/debug/java/com/myprojectname/ReactNativeFlipper.java
++++ /dev/null
+@@ -1,72 +0,0 @@
+-/**
+- * Copyright (c) Facebook, Inc. and its affiliates.
+- *
+- * <p>This source code is licensed under the MIT license found in the LICENSE file in the root
+- * directory of this source tree.
+- */
+-package com.myprojectname;
+-
+-import android.content.Context;
+-import com.facebook.flipper.android.AndroidFlipperClient;
+-import com.facebook.flipper.android.utils.FlipperUtils;
+-import com.facebook.flipper.core.FlipperClient;
+-import com.facebook.flipper.plugins.crashreporter.CrashReporterPlugin;
+-import com.facebook.flipper.plugins.databases.DatabasesFlipperPlugin;
+-import com.facebook.flipper.plugins.fresco.FrescoFlipperPlugin;
+-import com.facebook.flipper.plugins.inspector.DescriptorMapping;
+-import com.facebook.flipper.plugins.inspector.InspectorFlipperPlugin;
+-import com.facebook.flipper.plugins.network.FlipperOkhttpInterceptor;
+-import com.facebook.flipper.plugins.network.NetworkFlipperPlugin;
+-import com.facebook.flipper.plugins.react.ReactFlipperPlugin;
+-import com.facebook.flipper.plugins.sharedpreferences.SharedPreferencesFlipperPlugin;
+-import com.facebook.react.ReactInstanceManager;
+-import com.facebook.react.bridge.ReactContext;
+-import com.facebook.react.modules.network.NetworkingModule;
+-import okhttp3.OkHttpClient;
+-
+-public class ReactNativeFlipper {
+-  public static void initializeFlipper(Context context, ReactInstanceManager reactInstanceManager) {
+-    if (FlipperUtils.shouldEnableFlipper(context)) {
+-      final FlipperClient client = AndroidFlipperClient.getInstance(context);
+-
+-      client.addPlugin(new InspectorFlipperPlugin(context, DescriptorMapping.withDefaults()));
+-      client.addPlugin(new ReactFlipperPlugin());
+-      client.addPlugin(new DatabasesFlipperPlugin(context));
+-      client.addPlugin(new SharedPreferencesFlipperPlugin(context));
+-      client.addPlugin(CrashReporterPlugin.getInstance());
+-
+-      NetworkFlipperPlugin networkFlipperPlugin = new NetworkFlipperPlugin();
+-      NetworkingModule.setCustomClientBuilder(
+-          new NetworkingModule.CustomClientBuilder() {
+-            @Override
+-            public void apply(OkHttpClient.Builder builder) {
+-              builder.addNetworkInterceptor(new FlipperOkhttpInterceptor(networkFlipperPlugin));
+-            }
+-          });
+-      client.addPlugin(networkFlipperPlugin);
+-      client.start();
+-
+-      // Fresco Plugin needs to ensure that ImagePipelineFactory is initialized
+-      // Hence we run if after all native modules have been initialized
+-      ReactContext reactContext = reactInstanceManager.getCurrentReactContext();
+-      if (reactContext == null) {
+-        reactInstanceManager.addReactInstanceEventListener(
+-            new ReactInstanceManager.ReactInstanceEventListener() {
+-              @Override
+-              public void onReactContextInitialized(ReactContext reactContext) {
+-                reactInstanceManager.removeReactInstanceEventListener(this);
+-                reactContext.runOnNativeModulesQueueThread(
+-                    new Runnable() {
+-                      @Override
+-                      public void run() {
+-                        client.addPlugin(new FrescoFlipperPlugin());
+-                      }
+-                    });
+-              }
+-            });
+-      } else {
+-        client.addPlugin(new FrescoFlipperPlugin());
+-      }
+-    }
+-  }
+-}
+diff --git a/template/merged/android/app/src/main/java/com/myprojectname/MainApplication.java b/template/merged/android/app/src/main/java/com/myprojectname/MainApplication.java
+index a058882..060bb1a 100644
+--- a/template/merged/android/app/src/main/java/com/myprojectname/MainApplication.java
++++ b/template/merged/android/app/src/main/java/com/myprojectname/MainApplication.java
+@@ -44,37 +44,6 @@ public class MainApplication extends Application implements ReactApplication {
+   public void onCreate() {
+     super.onCreate();
+     SoLoader.init(this, /* native exopackage */ false);
+-    initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
+   }
+ 
+-  /**
+-   * Loads Flipper in React Native templates. Call this in the onCreate method with something like
+-   * initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
+-   *
+-   * @param context
+-   * @param reactInstanceManager
+-   */
+-  private static void initializeFlipper(
+-      Context context, ReactInstanceManager reactInstanceManager) {
+-    if (BuildConfig.DEBUG) {
+-      try {
+-        /*
+-         We use reflection here to pick up the class that initializes Flipper,
+-        since Flipper library is not available in release mode
+-        */
+-        Class<?> aClass = Class.forName("com.myprojectname.ReactNativeFlipper");
+-        aClass
+-            .getMethod("initializeFlipper", Context.class, ReactInstanceManager.class)
+-            .invoke(null, context, reactInstanceManager);
+-      } catch (ClassNotFoundException e) {
+-        e.printStackTrace();
+-      } catch (NoSuchMethodException e) {
+-        e.printStackTrace();
+-      } catch (IllegalAccessException e) {
+-        e.printStackTrace();
+-      } catch (InvocationTargetException e) {
+-        e.printStackTrace();
+-      }
+-    }
+-  }
+ }
+diff --git a/template/merged/android/gradle.properties b/template/merged/android/gradle.properties
+index 3bdbd3d..95b56fe 100644
+--- a/template/merged/android/gradle.properties
++++ b/template/merged/android/gradle.properties
+@@ -23,6 +23,3 @@
+ android.useAndroidX=true
+ # Automatically convert third-party libraries to use AndroidX
+ android.enableJetifier=true
+-
+-# Version of flipper SDK to use with React Native
+-FLIPPER_VERSION=0.54.0
+diff --git a/template/merged/ios/MyProjectName/AppDelegate.m b/template/merged/ios/MyProjectName/AppDelegate.m
+index 73f230f..c5575ee 100644
+--- a/template/merged/ios/MyProjectName/AppDelegate.m
++++ b/template/merged/ios/MyProjectName/AppDelegate.m
+@@ -4,32 +4,10 @@
+ #import <React/RCTBundleURLProvider.h>
+ #import <React/RCTRootView.h>
+ 
+-#ifdef FB_SONARKIT_ENABLED
+-#import <FlipperKit/FlipperClient.h>
+-#import <FlipperKitLayoutPlugin/FlipperKitLayoutPlugin.h>
+-#import <FlipperKitUserDefaultsPlugin/FKUserDefaultsPlugin.h>
+-#import <FlipperKitNetworkPlugin/FlipperKitNetworkPlugin.h>
+-#import <SKIOSNetworkPlugin/SKIOSNetworkAdapter.h>
+-#import <FlipperKitReactPlugin/FlipperKitReactPlugin.h>
+-
+-static void InitializeFlipper(UIApplication *application) {
+-  FlipperClient *client = [FlipperClient sharedClient];
+-  SKDescriptorMapper *layoutDescriptorMapper = [[SKDescriptorMapper alloc] initWithDefaults];
+-  [client addPlugin:[[FlipperKitLayoutPlugin alloc] initWithRootNode:application withDescriptorMapper:layoutDescriptorMapper]];
+-  [client addPlugin:[[FKUserDefaultsPlugin alloc] initWithSuiteName:nil]];
+-  [client addPlugin:[FlipperKitReactPlugin new]];
+-  [client addPlugin:[[FlipperKitNetworkPlugin alloc] initWithNetworkAdapter:[SKIOSNetworkAdapter new]]];
+-  [client start];
+-}
+-#endif
+-
+ @implementation AppDelegate
+ 
+ - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+ {
+-#ifdef FB_SONARKIT_ENABLED
+-  InitializeFlipper(application);
+-#endif
+ 
+   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
+   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
+diff --git a/template/merged/ios/Podfile b/template/merged/ios/Podfile
+index a33583e..98cf84a 100644
+--- a/template/merged/ios/Podfile
++++ b/template/merged/ios/Podfile
+@@ -12,15 +12,6 @@ target 'MyProjectName' do
+     inherit! :complete
+     # Pods for testing
+   end
+-
+-  # Enables Flipper.
+-  #
+-  # Note that if you have use_frameworks! enabled, Flipper will not work and
+-  # you should disable these next few lines.
+-  use_flipper!
+-  post_install do |installer|
+-    flipper_post_install(installer)
+-  end
+ end
+ 
+ target 'MyProjectName-tvOS' do
