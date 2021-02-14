@@ -102,6 +102,14 @@ module.exports = {
         'format': ['PascalCase'],
       },
     ],
+    'prettier/prettier': [
+      'error',
+      {
+        'singleQuote': true,
+        'printWidth': 120,
+        'trailingComma': 'es5',
+      }
+    ],
   },
   plugins: ['filename-rules', 'prefer-arrow', 'import', 'json-format'],
   settings: {

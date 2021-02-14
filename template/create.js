@@ -75,6 +75,7 @@ function installDependencies() {
 function cleanup() {
   fs.rmdirSync(path.resolve(MERGE, 'node_modules'), { recursive: true });
   fs.rmdirSync(path.resolve(MERGE, IOS, 'Pods'), { recursive: true });
+  updateLicenseDate();
 }
 //#endregion
 
@@ -153,12 +154,27 @@ function installDependencyType(depType) {
     );
   }
 }
+
+function updateLicenseDate() {
+  const licPath = '../LICENSE';
+  const year = (new Date()).getFullYear();
+  const lic = fs.readFileSync(licPath, 'utf8');
+  const newLic = lic.replace(/(Copyright \(c\) )(\d{4})(.*)/, `$1${year}$3`);
+  fs.writeFileSync(licPath, newLic, 'utf8');
+}
 //#endregion
 
+// wipe out ephimeral directories & make new project with default template
 initialize();
+// copy relevant project files from default template (ios & android) 
 copyProjectFiles();
+// copy customized files (configs & src)
 copyCustomFiles();
+// add scripts and settings to package.json
 modifyPackageFile();
+// flip off Flipper bc it don't work oob
 removeFlipper();
+// add devDependencies mostly
 installDependencies();
+// clean up some dirs even though they're ignored
 cleanup();
