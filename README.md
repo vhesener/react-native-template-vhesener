@@ -10,7 +10,7 @@
 ## Usage
 
 ```sh
-npx react-native init MyApp --template react-native-template-vhesener
+npx react-native init MyApp --template git@github.com:vhesener/react-native-template-vhesener.git
 ```
 
 ## License
