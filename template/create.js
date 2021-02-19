@@ -141,9 +141,16 @@ const DEP_TYPE_MAIN = 'dependencies';
 function installDependencyType(depType) {
   const custom = getPackage(CUSTOM);
   const dependencies = custom.json[depType];
+  const proj = getPackage(PROJ);
+  const projDependencies = proj.json[depType] || {};
 
   let depList = '';
   for (const depName in dependencies) {
+    // only update dependencies versions that haven't
+    // been explicitly set in the base template from RN
+    if(projDependencies[depName]) {
+      continue;
+    }
     depList = `${depList} ${depName}`;
   }
 
